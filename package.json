@@ -1,0 +1,47 @@
+{
+  "name": "anypoint-automation-cli",
+  "version": "1.0.0",
+  "description": "Automate CI/CD related tasks with Anypoint Platform - Crowd release",
+  "main": "cli.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "anypoint",
+    "automation",
+    "cloudhub"
+  ],
+  "author": "Andres Ramirez",
+  "license": "ISC",
+  "bin": {
+    "anypoint-automation-cli": "./cli.js"
+  },
+  "dependencies": {
+    "@octokit/rest": "^15.5.1",
+    "chalk": "^2.4.1",
+    "child_process": "^1.0.2",
+    "clear": "^0.1.0",
+    "clui": "^0.3.6",
+    "command-exists": "^1.2.6",
+    "commander": "^2.15.1",
+    "configstore": "^3.1.2",
+    "dotenv": "^5.0.1",
+    "figlet": "^1.2.0",
+    "inquirer": "^5.2.0",
+    "intercept-stdout": "^0.1.2",
+    "lodash": "^4.17.10",
+    "minimist": "^1.2.0",
+    "path": "^0.12.7",
+    "prettyjson": "^1.2.1",
+    "request": "^2.87.0",
+    "shelljs": "^0.8.2",
+    "simple-git": "^1.92.0",
+    "superagent": "^3.8.3",
+    "sync-request": "^6.0.0",
+    "touch": "^3.1.0",
+    "underscore": "^1.9.0",
+    "xml2js": "^0.4.19",
+    "yargs": "^11.0.0"
+  }
+}
