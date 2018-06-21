@@ -12,6 +12,14 @@ exports.builder = {
   from: {
     alias: 'f',
     description: 'Promote from environment (e.g. dev / test)'
+  },
+  assetId: {
+    alias: 'a',
+    description: 'Asset ID in Exchange (e.g. proc-demo-api-impl)'
+  }
+  assetVersion: {
+    alias: 'v',
+    description: 'Asset Version in Exchange (e.g. 1.0.0)'
   }
 }
 
@@ -106,22 +114,33 @@ exports.handler = function (argv) {
   else if (argv.from == "dev" && argv.to == "test") {
     logger.info('Promoting from ' + chalk.red('[' + argv.from + ']') + ' to ' + chalk.red('[' + argv.to + ']'));
 
+    if (argv.assetVersion == null) {
+      logger.trace('Getting latest asset version from exchange...')
+      var assetVersion = apis.getAssetInfo(process.env.ANYPOINT_ORG_ID,
+                                        argv.assetId,
+                                        process.env.ANYPOINT_USERNAME,
+                                        process.env.ANYPOINT_PASSWORD).version
+    } else {
+      logger.trace('Using provided asset version...')
+      var assetVersion = argv.assetVersion
+    }
+
     // Load required project files
-    var projectArtifactId   = files.readXMLFileAsJSON("pom.xml").project.artifactId[0]
-    var projectVersion      = files.readXMLFileAsJSON("pom.xml").project.version[0]
     var isApi = (files.fileExists("apiDeploymentValues.json")) ? true : false
 
     logger.trace('Application promotion summary:')
     var appSummary = {
       'to' : argv.to,
       'from' : argv.from,
-      'isAPI' : isApi
+      'isAPI' : isApi,
+      'assetId': argv.assetId,
+      'assetVersion': assetVersion
     }
     console.log(prettyjson.render(appSummary))
 
     // Infer application names for Source and Target environments
-    var cloudhubApplicationNameSource = projectArtifactId + "-" + process.env.CONST_APP_DEPLOYMENT_ENV_SUFFIX_DEV
-    var cloudhubApplicationNameTarget = projectArtifactId + "-" + process.env.CONST_APP_DEPLOYMENT_ENV_SUFFIX_TEST
+    var cloudhubApplicationNameSource = argv.assetId + "-" + process.env.CONST_APP_DEPLOYMENT_ENV_SUFFIX_DEV
+    var cloudhubApplicationNameTarget = argv.assetId + "-" + process.env.CONST_APP_DEPLOYMENT_ENV_SUFFIX_TEST
 
     // CLI: Get Application List from Target environment
     var cloudhubApplicationListTarget = anypoint_cli.getApplicationList(
@@ -183,8 +202,9 @@ exports.handler = function (argv) {
     // PREPARE DEPLOYMENT PROCESS
     // Download asset
     logger.info("Downloading asset...")
-    apis.downloadAsset(projectArtifactId,
-                       projectVersion,
+    apis.downloadAsset(argv.assetId,
+                       assetVersion,
+                       ".zip",
                        process.env.ANYPOINT_ORG_ID,
                        process.env.ANYPOINT_USERNAME,
                        process.env.ANYPOINT_PASSWORD)
@@ -192,7 +212,7 @@ exports.handler = function (argv) {
     var appDeploymentInfo = {
       deploymentType: "zip",
       zip: {
-        filePath: projectArtifactId + "-" + projectVersion + ".zip"
+        filePath: argv.assetId + "-" + assetVersion + ".zip"
       }
     }
     // Define base application properties
