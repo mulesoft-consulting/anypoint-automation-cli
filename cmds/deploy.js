@@ -21,6 +21,14 @@ exports.handler = function (argv) {
   if (argv.to == "dev" && argv.from != null) {
     logger.error("Environment [" + argv.to + "] can't be promoted from [" + argv.from + "] as its the lowest environment.")
     process.exit(1);
+    // var projectArtifactId   = files.readXMLFileAsJSON("pom.xml").project.artifactId[0]
+    // var projectVersion      = files.readXMLFileAsJSON("pom.xml").project.version[0]
+    //
+    // var result = apis.downloadAsset(projectArtifactId, '1.0.1', process.env.ANYPOINT_ORG_ID,
+    //                   process.env.ANYPOINT_USERNAME,
+    //                   process.env.ANYPOINT_PASSWORD)
+    // console.log(result);
+    // process.exit(1);
   }
 
   // Initial deployment can't be promoted
@@ -108,6 +116,7 @@ exports.handler = function (argv) {
 
     // Load required project files
     var projectArtifactId   = files.readXMLFileAsJSON("pom.xml").project.artifactId[0]
+    var projectVersion      = files.readXMLFileAsJSON("pom.xml").project.version[0]
     var isApi = (files.fileExists("apiDeploymentValues.json")) ? true : false
 
     logger.trace('Application promotion summary:')
@@ -124,15 +133,15 @@ exports.handler = function (argv) {
 
     // CLI: Get Application List from Target environment
     var cloudhubApplicationListTarget = anypoint_cli.getApplicationList(
-                                              process.env.ANYPOINT_USERNAME,
-                                              process.env.ANYPOINT_PASSWORD,
-                                              process.env.ANYPOINT_ENV_TEST_NAME)
+                                            process.env.ANYPOINT_USERNAME,
+                                            process.env.ANYPOINT_PASSWORD,
+                                            process.env.ANYPOINT_ENV_TEST_NAME)
     //console.log(prettyjson.render(cloudhubApplicationListTarget))
 
     // Verify if app already exists in Target environment
     var appExistsInTarget = appExistsInAppList(cloudhubApplicationNameTarget, cloudhubApplicationListTarget)
 
-    // If application is an API
+    // If application is an API the Promotion process will run
     if (isApi) {
       logger.info('Loading apiDeploymentValues.json...')
       var apiDeploymentValues = files.readFileAsJSON("apiDeploymentValues.json")
@@ -206,6 +215,10 @@ exports.handler = function (argv) {
           }
           _.extend(properties, apiProperties)
       }
+      // Define additional properties
+      if (process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES != null && process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES != "") {
+          _.extend(properties, parseProperties(process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES))
+      }
       // Application details
       var appData = {
         properties: properties,
@@ -222,6 +235,8 @@ exports.handler = function (argv) {
         monitoringEnabled: true,
         monitoringAutoRestart: true
       }
+      logger.trace("appData...")
+      console.log(prettyjson.render(appData))
       // Call Application update
       var responseModify = apis.appModify(cloudhubApplicationNameTarget, appData, false, appDeploymentInfo, process.env.ANYPOINT_ORG_ID, process.env.ANYPOINT_ENV_TEST_ID, process.env.ANYPOINT_USERNAME, process.env.ANYPOINT_PASSWORD)
       logger.trace(responseModify)
@@ -275,6 +290,7 @@ exports.handler = function (argv) {
       }
       logger.trace("appData...")
       console.log(prettyjson.render(appData))
+      // Call Application Create
       var responseCreate = apis.appCreate(appData, appDeploymentInfo, process.env.ANYPOINT_ORG_ID, process.env.ANYPOINT_ENV_TEST_ID, process.env.ANYPOINT_USERNAME, process.env.ANYPOINT_PASSWORD)
       logger.trace(responseCreate)
     }
