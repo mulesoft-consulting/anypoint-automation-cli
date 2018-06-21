@@ -16,7 +16,7 @@ exports.builder = {
   assetId: {
     alias: 'a',
     description: 'Asset ID in Exchange (e.g. proc-demo-api-impl)'
-  }
+  },
   assetVersion: {
     alias: 'v',
     description: 'Asset Version in Exchange (e.g. 1.0.0)'
