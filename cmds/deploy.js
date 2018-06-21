@@ -115,13 +115,13 @@ exports.handler = function (argv) {
     logger.info('Promoting from ' + chalk.red('[' + argv.from + ']') + ' to ' + chalk.red('[' + argv.to + ']'));
 
     if (argv.assetVersion == null) {
-      logger.trace('Getting latest asset version from exchange...')
+      logger.info('Getting latest asset version from exchange...')
       var assetVersion = apis.getAssetInfo(process.env.ANYPOINT_ORG_ID,
                                         argv.assetId,
                                         process.env.ANYPOINT_USERNAME,
                                         process.env.ANYPOINT_PASSWORD).version
     } else {
-      logger.trace('Using provided asset version...')
+      logger.info('Using provided asset version: ' + argv.assetVersion)
       var assetVersion = argv.assetVersion
     }
 
