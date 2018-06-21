@@ -120,6 +120,10 @@ exports.handler = function (argv) {
                                         argv.assetId,
                                         process.env.ANYPOINT_USERNAME,
                                         process.env.ANYPOINT_PASSWORD).version
+      if (assetVersion != null) {
+        logger.error('Asset not found')
+        process.exit(1);
+      }
     } else {
       logger.info('Using provided asset version: ' + argv.assetVersion)
       var assetVersion = argv.assetVersion
