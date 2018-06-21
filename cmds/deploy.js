@@ -272,6 +272,7 @@ exports.handler = function (argv) {
       var responseCreate = apis.appCreate(appData, appDeploymentInfo, process.env.ANYPOINT_ORG_ID, process.env.ANYPOINT_ENV_TEST_ID, process.env.ANYPOINT_USERNAME, process.env.ANYPOINT_PASSWORD)
       logger.trace(responseCreate)
     }
+    logger.warn("DEPLOYMENT FINISHED SUCCESSFULLY")
   } else {
     logger.error("Environment [" + argv.to + "] not supported")
     process.exit(1);
