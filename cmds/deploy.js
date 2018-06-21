@@ -21,14 +21,6 @@ exports.handler = function (argv) {
   if (argv.to == "dev" && argv.from != null) {
     logger.error("Environment [" + argv.to + "] can't be promoted from [" + argv.from + "] as its the lowest environment.")
     process.exit(1);
-    // var projectArtifactId   = files.readXMLFileAsJSON("pom.xml").project.artifactId[0]
-    // var projectVersion      = files.readXMLFileAsJSON("pom.xml").project.version[0]
-    //
-    // var result = apis.downloadAsset(projectArtifactId, '1.0.1', process.env.ANYPOINT_ORG_ID,
-    //                   process.env.ANYPOINT_USERNAME,
-    //                   process.env.ANYPOINT_PASSWORD)
-    // console.log(result);
-    // process.exit(1);
   }
 
   // Initial deployment can't be promoted
@@ -188,53 +180,59 @@ exports.handler = function (argv) {
       }
     }
 
-    // If application exists, then update, else create
+    // PREPARE DEPLOYMENT PROCESS
+    // Download asset
+    logger.info("Downloading asset...")
+    apis.downloadAsset(projectArtifactId,
+                       projectVersion,
+                       process.env.ANYPOINT_ORG_ID,
+                       process.env.ANYPOINT_USERNAME,
+                       process.env.ANYPOINT_PASSWORD)
+
+    var appDeploymentInfo = {
+      deploymentType: "zip",
+      zip: {
+        filePath: projectArtifactId + "-" + projectVersion + ".zip"
+      }
+    }
+    // Define base application properties
+    var properties = {
+      "mule.env": process.env.CONST_APP_DEPLOYMENT_ENV_SUFFIX_TEST,
+      "anypoint.platform.client_id": process.env.ANYPOINT_ENV_TEST_CLIENT_ID,
+      "anypoint.platform.client_secret": process.env.ANYPOINT_ENV_TEST_CLIENT_SECRET,
+      "mule.key": process.env.APP_PROPS_ENCRYPTION_KEY_TEST,
+      "mule.config.server.url": process.env.SPRING_CLOUD_CONFIG_SERVER
+    }
+    // Define API related properties
+    if (isApi) {
+        var apiProperties = {
+          "api.name": apiDetailsTarget.name,
+          "api.version": apiDetailsTarget.autodiscoveryInstanceName
+        }
+        _.extend(properties, apiProperties)
+    }
+    // Define additional properties
+    if (process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES != null && process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES != "") {
+        _.extend(properties, parseProperties(process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES))
+    }
+    // Application details
+    var appData = {
+      properties: properties,
+      region: process.env.DEPLOYMENT_CONFIG_REGION,
+      workers: {
+        type: {
+          name: getWorkerSizeNameFromVCores(process.env.DEPLOYMENT_CONFIG_WORKER_SIZE)
+        },
+        amount: process.env.DEPLOYMENT_CONFIG_WORKER_COUNT
+      },
+      muleVersion: {
+        version: process.env.DEPLOYMENT_CONFIG_RUNTIME
+      },
+      monitoringEnabled: true,
+      monitoringAutoRestart: true
+    }
     if (appExistsInTarget) {
       // MODIFY APPLICATION
-      // Deployment info
-      var appDeploymentInfo = {
-        deploymentType: "sandbox",
-        sandbox: {
-          appName: cloudhubApplicationNameSource,
-          envId: process.env.ANYPOINT_ENV_DEV_ID
-        }
-      }
-      // Define base application properties
-      var properties = {
-        "mule.env": process.env.CONST_APP_DEPLOYMENT_ENV_SUFFIX_TEST,
-        "anypoint.platform.client_id": process.env.ANYPOINT_ENV_TEST_CLIENT_ID,
-        "anypoint.platform.client_secret": process.env.ANYPOINT_ENV_TEST_CLIENT_SECRET,
-        "mule.key": process.env.APP_PROPS_ENCRYPTION_KEY_TEST,
-        "mule.config.server.url": process.env.SPRING_CLOUD_CONFIG_SERVER
-      }
-      // Define API related properties
-      if (isApi) {
-          var apiProperties = {
-            "api.name": apiDetailsTarget.name,
-            "api.version": apiDetailsTarget.autodiscoveryInstanceName
-          }
-          _.extend(properties, apiProperties)
-      }
-      // Define additional properties
-      if (process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES != null && process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES != "") {
-          _.extend(properties, parseProperties(process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES))
-      }
-      // Application details
-      var appData = {
-        properties: properties,
-        region: process.env.DEPLOYMENT_CONFIG_REGION,
-        workers: {
-          type: {
-            name: getWorkerSizeNameFromVCores(process.env.DEPLOYMENT_CONFIG_WORKER_SIZE)
-          },
-          amount: process.env.DEPLOYMENT_CONFIG_WORKER_COUNT
-        },
-        muleVersion: {
-          version: process.env.DEPLOYMENT_CONFIG_RUNTIME
-        },
-        monitoringEnabled: true,
-        monitoringAutoRestart: true
-      }
       logger.trace("appData...")
       console.log(prettyjson.render(appData))
       // Call Application update
@@ -242,52 +240,8 @@ exports.handler = function (argv) {
       logger.trace(responseModify)
     } else {
       // CREATE APPLICATION
-      // Deployment info
-      var appDeploymentInfo = {
-        deploymentType: "sandbox",
-        sandbox: {
-          appName: cloudhubApplicationNameSource,
-          envId: process.env.ANYPOINT_ENV_DEV_ID
-        }
-      }
-      // Define base application properties
-      var properties = {
-        "mule.env": process.env.CONST_APP_DEPLOYMENT_ENV_SUFFIX_TEST,
-        "anypoint.platform.client_id": process.env.ANYPOINT_ENV_TEST_CLIENT_ID,
-        "anypoint.platform.client_secret": process.env.ANYPOINT_ENV_TEST_CLIENT_SECRET,
-        "mule.key": process.env.APP_PROPS_ENCRYPTION_KEY_TEST,
-        "mule.config.server.url": process.env.SPRING_CLOUD_CONFIG_SERVER
-      }
-      // Define API related properties
-      if (isApi) {
-          var apiProperties = {
-            "api.name": apiDetailsTarget.name,
-            "api.version": apiDetailsTarget.autodiscoveryInstanceName
-          }
-          _.extend(properties, apiProperties)
-      }
-      // Define additional properties
-      if (process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES != null && process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES != "") {
-          _.extend(properties, parseProperties(process.env.ADDITIONAL_DEPLOYMENT_PROPERTIES))
-      }
-
-      // Application details
-      var appData = {
-        domain: cloudhubApplicationNameTarget,
-        properties: properties,
-        region: process.env.DEPLOYMENT_CONFIG_REGION,
-        workers: {
-          type: {
-            name: getWorkerSizeNameFromVCores(process.env.DEPLOYMENT_CONFIG_WORKER_SIZE)
-          },
-          amount: process.env.DEPLOYMENT_CONFIG_WORKER_COUNT
-        },
-        muleVersion: {
-          version: process.env.DEPLOYMENT_CONFIG_RUNTIME
-        },
-        monitoringEnabled: true,
-        monitoringAutoRestart: true
-      }
+      // Adding application name for creation
+      appData.domain = cloudhubApplicationNameTarget;
       logger.trace("appData...")
       console.log(prettyjson.render(appData))
       // Call Application Create
